@@ -11,44 +11,69 @@ const style: CSSProperties = {
   width: "450px",
 };
 
+interface State {
+  pageIndex: number;
+  pageSize: number;
+  list: Item[];
+  hasMore: boolean;
+  total: number;
+  keyword: string;
+}
+
 const { Search } = Input;
 
 const App = () => {
-  const state = useReactive({
-    items: Array.from({ length: 20 }),
+  const state = useReactive<State>({
+    pageIndex: 1,
+    pageSize: 20,
+    list: [],
     hasMore: true,
+    total: 0,
+    keyword: "",
   });
 
-  const fetchMoreData = () => {
-    if (state.items.length >= 500) {
-      state.hasMore = false;
-      return;
-    }
-    // a fake async api call like which sends
-    // 20 more records in .5 secs
-    setTimeout(() => {
-      state.items = state.items.concat(Array.from({ length: 20 }));
-    }, 500);
+  const fetchData = () => {
+    state.list = Array.from({ length: 20 });
+    state.pageIndex++;
+    state.total = 100;
   };
 
-  const onSearch = (value: string) => console.log(value);
+  // load more
+  const fetchMoreData = () => {
+    if (state.keyword) {
+      if (state.list.length >= state.total) {
+        state.hasMore = false;
+        return;
+      }
+      setTimeout(() => {
+        state.list = state.list.concat(Array.from({ length: 20 }));
+      }, 500);
+    }
+    return;
+  };
+
+  const onSearch = (value: string) => {
+    state.keyword = value;
+    fetchData();
+  };
 
   return (
     <div className="container">
       <Popover
         placement="bottom"
+        trigger={["hover"]}
         arrow={false}
-        open={true}
         overlayStyle={{
           width: "450px",
           marginTop: "30px",
+          visibility: state.keyword ? "visible" : "hidden",
         }}
         style={{
           top: "250px",
         }}
         content={() => (
           <InfiniteScroll
-            dataLength={state.items.length}
+            dataLength={state.list.length}
             next={fetchMoreData}
             hasMore={state.hasMore}
             loader={<h4>Loading...</h4>}
@@ -59,7 +84,7 @@ const App = () => {
               </p>
             }
           >
-            {state.items.map((i, index) => (
+            {state.list.map((i, index) => (
               <div style={style} key={index}>
                 div - #{index}
               </div>
